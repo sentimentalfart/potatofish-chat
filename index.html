@@ -3,220 +3,243 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PotatoFish Room Sync</title>
-
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+  <title>PotatoFish Live Portal</title>
   <style>
     :root {
-      --bg-dark: #0f172a;
+      --bg-dark: #0b1120;
       --card-bg: #1e293b;
+      --card-border: #334155;
       --accent: #f59e0b;
-      --success: #22c55e;
-      --text: #f8fafc;
-      --muted: #94a3b8;
+      --accent-hover: #d97706;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.25);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     body {
       background-color: var(--bg-dark);
-      color: var(--text);
-      height: 100vh;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 16px;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
     }
 
     .card {
       background: var(--card-bg);
-      padding: 24px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
       text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    h1 { color: var(--accent); font-size: 1.8rem; margin-bottom: 8px; }
-    p { color: var(--muted); font-size: 0.85rem; margin-bottom: 16px; }
-
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 6px 0;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      font-size: 0.95rem;
+    /* Top Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger-glow);
+      color: var(--danger);
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
     }
 
-    input { background: #0f172a; color: #fff; outline: none; }
-
-    button {
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.2s;
+    .status-badge.online {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: var(--success-glow);
+      color: var(--success);
     }
 
-    button:hover { opacity: 0.9; }
-
-    .btn-meet {
-      background: var(--success);
-      color: #fff;
-      font-size: 1rem;
-      margin-top: 12px;
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--danger);
+      transition: background-color 0.3s ease;
     }
 
-    #room-screen { display: none; }
+    .status-badge.online .pulse-dot {
+      background-color: var(--success);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.8s infinite;
+    }
 
-    .chat-box {
-      height: 180px;
-      background: #0f172a;
-      border-radius: 10px;
-      overflow-y: auto;
-      padding: 12px;
-      text-align: left;
-      margin: 12px 0;
-      font-size: 0.85rem;
-      border: 1px solid #334155;
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .brand-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
-    .chat-msg { word-break: break-word; }
-    .chat-msg b { color: var(--accent); }
-    .status-badge { font-size: 0.75rem; color: var(--success); margin-bottom: 12px; display: block; }
+    .brand-title span {
+      background: linear-gradient(135deg, var(--accent) 0%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .message-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 20px 0 24px 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      word-break: break-word;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-action {
+      display: none;
+      width: 100%;
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 16px 24px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      box-shadow: 0 10px 20px var(--success-glow);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-action:active {
+      transform: translateY(0);
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
 
-  <div class="card" id="login-screen">
-    <h1>🥔 PotatoFish</h1>
-    <p>Enter a room name to sync with your group</p>
-    <input type="text" id="room-code" placeholder="Room Code (e.g. potatofish)">
-    <input type="text" id="username" placeholder="Your Name">
-    <button onclick="joinRoom()">Join Room</button>
-  </div>
+  <div class="container">
+    <div class="card">
+      
+      <div id="status-badge" class="status-badge">
+        <span class="pulse-dot"></span>
+        <span id="status-text">OFFLINE</span>
+      </div>
 
-  <div class="card" id="room-screen">
-    <h1 id="room-title">Room</h1>
-    <span class="status-badge">● Live Synced Backend</span>
+      <h1 class="brand-title">🥔 <span>PotatoFish</span></h1>
 
-    <div style="text-align: left; margin-bottom: 12px;">
-      <label style="font-size: 0.8rem; color: var(--muted);">Shared Google Meet Link:</label>
-      <input type="text" id="meet-input" placeholder="Paste Meet link or code here..." oninput="updateSharedMeet()">
-      <button class="btn-meet" onclick="openMeet()">📞 Join Google Meet</button>
-    </div>
+      <div class="message-box" id="backend-message">
+        Connecting to room host...
+      </div>
 
-    <div class="chat-box" id="chat"></div>
+      <a id="meet-btn" class="btn-action" href="#" target="_blank" rel="noopener noreferrer">
+        📞 Join Meeting Now
+      </a>
 
-    <div style="display: flex; gap: 6px;">
-      <input type="text" id="msg-input" placeholder="Message room..." onkeypress="if(event.key==='Enter') sendMsg()">
-      <button style="width: 80px;" onclick="sendMsg()">Send</button>
+      <p class="footer-note">Live updates active • Powered by PotatoFish</p>
+
     </div>
   </div>
 
   <script>
-    // Configured with a free, public Firebase Realtime Database endpoint
-    const firebaseConfig = {
-      databaseURL: "https://potatofish-chat-default-rtdb.firebaseio.com/"
-    };
+    const BACKEND_URL = "http://localhost:5000/api/room";
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    async function checkBackend() {
+      const statusBadge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+      const messageBox = document.getElementById('backend-message');
+      const meetBtn = document.getElementById('meet-btn');
 
-    let roomCode = "";
-    let username = "";
-    let roomRef = null;
+      try {
+        const response = await fetch(BACKEND_URL);
+        if (!response.ok) throw new Error("Offline");
 
-    function joinRoom() {
-      const codeInput = document.getElementById('room-code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-      const userInput = document.getElementById('username').value.trim();
+        const data = await response.json();
 
-      if (!codeInput || !userInput) {
-        alert("Please enter both a room code and a name.");
-        return;
-      }
+        // Update Message
+        messageBox.innerText = data.message || "Host is live!";
 
-      roomCode = codeInput;
-      username = userInput;
-
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('room-screen').style.display = 'block';
-      document.getElementById('room-title').innerText = "🥔 " + roomCode.toUpperCase();
-
-      // Connect directly to the specific room in Firebase
-      roomRef = db.ref('rooms/' + roomCode);
-
-      // Listen for shared Google Meet link updates in real-time
-      roomRef.child('meetCode').on('value', (snapshot) => {
-        const val = snapshot.val();
-        if (val !== null) {
-          document.getElementById('meet-input').value = val;
+        // Update Button Link
+        if (data.link && data.link.trim() !== "") {
+          let url = data.link.trim();
+          if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+          }
+          meetBtn.href = url;
+          meetBtn.style.display = 'inline-block';
+        } else {
+          meetBtn.style.display = 'none';
         }
-      });
 
-      // Listen for chat messages in real-time
-      roomRef.child('messages').on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        addChat(data.user, data.msg);
-      });
-    }
+        // Update Status to Online
+        statusBadge.className = "status-badge online";
+        statusText.innerText = "BROADCAST LIVE";
 
-    // Broadcasts the Meet link to everyone in the room as you type
-    function updateSharedMeet() {
-      const link = document.getElementById('meet-input').value;
-      if (roomRef) {
-        roomRef.child('meetCode').set(link);
+      } catch (err) {
+        // Fallback state when Python script is closed
+        messageBox.innerText = "Waiting for host to publish a link in Python...";
+        meetBtn.style.display = 'none';
+
+        statusBadge.className = "status-badge";
+        statusText.innerText = "OFFLINE";
       }
     }
 
-    // Broadcasts chat messages to the backend
-    function sendMsg() {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if (!text || !roomRef) return;
-
-      roomRef.child('messages').push({
-        user: username,
-        msg: text,
-        timestamp: Date.now()
-      });
-
-      input.value = "";
-    }
-
-    function addChat(user, msg) {
-      const chat = document.getElementById('chat');
-      const div = document.createElement('div');
-      div.className = "chat-msg";
-      div.innerHTML = `<b>${escapeHtml(user)}:</b> ${escapeHtml(msg)}`;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    function openMeet() {
-      let code = document.getElementById('meet-input').value.trim();
-      if (!code) {
-        alert("No Google Meet link provided yet! Paste one in the field above.");
-        return;
-      }
-
-      if (!code.startsWith("http")) {
-        code = "https://meet.google.com/" + code;
-      }
-      window.open(code, '_blank');
-    }
-
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
+    // Auto-refresh every 2 seconds
+    checkBackend();
+    setInterval(checkBackend, 2000);
   </script>
+
 </body>
 </html>
