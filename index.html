@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PotatoFish Live Portal</title>
-
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+  <title>PotatoFish - Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
       --bg-dark: #0b1120;
@@ -15,9 +12,7 @@
       --card-border: #334155;
       --accent: #f59e0b;
       --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.25);
       --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.25);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
     }
@@ -25,10 +20,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
     body {
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background: var(--bg-dark);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -37,73 +29,57 @@
       padding: 20px;
     }
 
-    .container { width: 100%; max-width: 440px; }
-
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 24px;
       padding: 32px 24px;
+      width: 100%;
+      max-width: 420px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       text-align: center;
     }
 
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid var(--danger-glow);
-      color: var(--danger);
-      margin-bottom: 20px;
-    }
-
-    .status-badge.online {
-      background: rgba(16, 185, 129, 0.1);
-      border-color: var(--success-glow);
-      color: var(--success);
-    }
-
-    .pulse-dot {
-      width: 8px; height: 8px; border-radius: 50%; background-color: var(--danger);
-    }
-
-    .status-badge.online .pulse-dot {
-      background-color: var(--success);
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-      animation: pulse 1.8s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
     .brand-title { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
-    .brand-title span { background: linear-gradient(135deg, var(--accent) 0%, #fbbf24 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand-title span { color: var(--accent); }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    .btn-join-room {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
 
     .message-box {
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 16px;
       padding: 16px;
-      margin: 20px 0 24px 0;
+      margin: 12px 0 20px 0;
       color: var(--text-muted);
       font-size: 0.95rem;
-      line-height: 1.5;
       word-break: break-word;
-      min-height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    .btn-action {
+    .btn-meet {
       display: none;
       width: 100%;
       background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
@@ -113,72 +89,78 @@
       border-radius: 16px;
       font-weight: 700;
       font-size: 1.05rem;
-      box-shadow: 0 10px 20px var(--success-glow);
-      transition: all 0.2s ease;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
     }
-
-    .btn-action:hover { transform: translateY(-2px); }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="card">
-      
-      <div id="status-badge" class="status-badge">
-        <span class="pulse-dot"></span>
-        <span id="status-text">OFFLINE</span>
-      </div>
+  <div class="card">
+    <h1 class="brand-title">🥔 <span>PotatoFish</span></h1>
 
-      <h1 class="brand-title">🥔 <span>PotatoFish</span></h1>
-
-      <div class="message-box" id="backend-message">
-        Waiting for host to publish a meeting...
-      </div>
-
-      <a id="meet-btn" class="btn-action" href="#" target="_blank" rel="noopener noreferrer">
-        📞 Join Meeting Now
-      </a>
-
+    <div id="join-section">
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">Enter the host's room code to connect</p>
+      <input type="text" id="room-code" placeholder="Room Code (e.g. potatofish)">
+      <button class="btn-join-room" onclick="connectToHost()">Connect</button>
     </div>
+
+    <div class="message-box" id="status-message">
+      Enter a room code above to search for live meeting.
+    </div>
+
+    <a id="meet-btn" class="btn-meet" href="#" target="_blank" rel="noopener noreferrer">
+      📞 Join Google Meet
+    </a>
   </div>
 
   <script>
-    // Live Cloud Sync
-    const firebaseConfig = { databaseURL: "https://potatofish-chat-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    let peer = null;
 
-    // Real-time listener
-    db.ref('room').on('value', (snapshot) => {
-      const data = snapshot.val();
+    function connectToHost() {
+      const roomInput = document.getElementById("room-code").value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const statusMessage = document.getElementById("status-message");
+      const meetBtn = document.getElementById("meet-btn");
 
-      const statusBadge = document.getElementById('status-badge');
-      const statusText = document.getElementById('status-text');
-      const messageBox = document.getElementById('backend-message');
-      const meetBtn = document.getElementById('meet-btn');
+      if (!roomInput) return alert("Please enter a room code.");
 
-      if (data && data.link) {
-        messageBox.innerText = data.message || "Meeting is live!";
+      statusMessage.innerText = `Connecting to host room "${roomInput.toUpperCase()}"...`;
 
-        let url = data.link.trim();
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          url = "https://" + url;
-        }
-        meetBtn.href = url;
-        meetBtn.style.display = 'inline-block';
+      if (peer) peer.destroy();
 
-        statusBadge.className = "status-badge online";
-        statusText.innerText = "BROADCAST LIVE";
-      } else {
-        messageBox.innerText = "Waiting for host to publish a meeting...";
+      peer = new Peer({ config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+
+      peer.on('open', () => {
+        const hostPeerId = `pf-host-${roomInput}`;
+        const conn = peer.connect(hostPeerId, { reliable: true });
+
+        conn.on('open', () => {
+          statusMessage.innerText = "Connected to host! Fetching Google Meet link...";
+        });
+
+        conn.on('data', (data) => {
+          if (data && data.link) {
+            let url = data.link.trim();
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+              url = "https://meet.google.com/" + url;
+            }
+
+            meetBtn.href = url;
+            meetBtn.style.display = 'block';
+            statusMessage.innerText = "🟢 Host is live! Click below to join the meeting.";
+          }
+        });
+
+        conn.on('close', () => {
+          statusMessage.innerText = "Host disconnected.";
+          meetBtn.style.display = 'none';
+        });
+      });
+
+      peer.on('error', () => {
+        statusMessage.innerText = "❌ Host not found. Make sure the host has 'admin.html' open!";
         meetBtn.style.display = 'none';
-
-        statusBadge.className = "status-badge";
-        statusText.innerText = "OFFLINE";
-      }
-    });
+      });
+    }
   </script>
-
 </body>
 </html>
